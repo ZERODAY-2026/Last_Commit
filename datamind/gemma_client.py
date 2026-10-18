@@ -47,12 +47,55 @@ class OllamaGemma:
         except (KeyError, TypeError, json.JSONDecodeError) as exc:
             raise GemmaError("Gemma returned invalid JSON") from exc
 
+    # Maps shortened or alternate values Gemma may return to the exact Literal.
+    _INTENT_ALIASES: dict[str, str] = {
+        "answer": "answerable",
+        "answerable": "answerable",
+        "ambiguous": "ambiguous",
+        "unsupported": "unsupported",
+        "follow_up": "follow_up",
+        "followup": "follow_up",
+        "follow-up": "follow_up",
+        "unanswerable": "unsupported",
+        "not_answerable": "unsupported",
+    }
+
+    @staticmethod
+    def _to_list(value: Any) -> list[str]:
+        """Coerce a Gemma field that should be a list but may come back as a
+        plain string (e.g. assumptions, tables_used) into a proper list."""
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            # Split on semicolons or newlines if the model used those as separators
+            for sep in (";", "\n", ","):
+                if sep in value:
+                    return [item.strip() for item in value.split(sep) if item.strip()]
+            return [value.strip()] if value.strip() else []
+        return []
+
     def route(self, question: str, schema: str) -> RouteDecision:
-        data = RouterOutput.model_validate(self._json_prompt(
-            "Classify the data question as answerable, ambiguous, unsupported, or "
-            "follow_up. Return JSON with intent, reason, clarifying_question. "
-            f"Use only this schema:\n{schema}\nQuestion: {question}"
-        ))
+        prompt = (
+            "Classify the data question as one of these exact intents: 'answerable', 'ambiguous', 'unsupported', or 'follow_up'.\n"
+            "- 'answerable': can be answered from the schema (e.g. counting orders, computing revenue, listing rows)\n"
+            "- 'ambiguous': question is unclear and needs clarification\n"
+            "- 'unsupported': question asks about data not present in the tables\n"
+            "- 'follow_up': question is incomplete and depends on the previous question\n"
+            "Return JSON with: intent, reason, clarifying_question.\n"
+            f"Schema:\n{schema}\nQuestion: {question}"
+        )
+        raw = self._json_prompt(prompt)
+        raw_intent = str(raw.get("intent", "answerable")).strip().lower()
+        if raw_intent in ("ambiguous", "unclear"):
+            raw["intent"] = "ambiguous"
+        elif raw_intent in ("unsupported", "unanswerable", "not_answerable", "out_of_scope", "impossible"):
+            raw["intent"] = "unsupported"
+        elif raw_intent in ("follow_up", "followup", "follow-up"):
+            raw["intent"] = "follow_up"
+        else:
+            # Everything else (answer, answerable, count, select, sum, filter, query, etc.) is answerable
+            raw["intent"] = "answerable"
+        data = RouterOutput.model_validate(raw)
         return RouteDecision(
             status=data.intent,
             reason=data.reason,
@@ -68,7 +111,12 @@ class OllamaGemma:
         )
         if repair:
             prompt += f"\nPrevious SQL error; repair it: {repair}"
-        data = SqlOutput.model_validate(self._json_prompt(prompt))
+        raw = self._json_prompt(prompt)
+        # Gemma sometimes returns assumptions / tables_used as a plain string.
+        for field in ("assumptions", "tables_used"):
+            if field in raw:
+                raw[field] = self._to_list(raw[field])
+        data = SqlOutput.model_validate(raw)
         return SQLProposal(sql=data.sql, assumptions=data.assumptions)
 
     def explain(

@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -50,7 +56,9 @@ load_dotenv()
 st.set_page_config(page_title="DataMind", page_icon="D", layout="wide")
 st.markdown(Path("app/static/style.css").read_text(), unsafe_allow_html=True)
 
-configs = sorted(Path("configs").glob("*.yaml"))
+configs = sorted(p for p in Path("configs").glob("*.yaml") if not p.name.endswith(".example.yaml"))
+if not configs:
+    configs = sorted(Path("configs").glob("*.yaml"))
 default_config = os.getenv("DATASET_CONFIG", "configs/tpch.yaml")
 config_paths = [str(path) for path in configs]
 if default_config not in config_paths:

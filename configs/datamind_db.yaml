@@ -1,0 +1,41 @@
+dataset: datamind_db
+display_name: DataMind DB (Global Country Metrics)
+description: Global dataset covering countries, years, and primary metric values across 4,368 rows.
+snowflake:
+  database: DATAMIND_DB
+  schema: PUBLIC
+tables:
+  DATAMIND:
+    description: >-
+      Country-level annual statistics. All metric values are stored in the single
+      column PRIMARY, differentiated by the YEAR column. There are NO individual year columns
+      like PRIMARY_2019 or PRIMARY_2025.
+    columns:
+      ENTITY: {type: TEXT, description: Country or entity name, e.g. 'India', 'United States'}
+      CODE: {type: TEXT, description: 3-letter country code, e.g. 'IND', 'USA'}
+      YEAR: {type: NUMBER, description: Observation year, e.g. 2019, 2025}
+      PRIMARY: {type: NUMBER, description: Primary recorded measurement value for that year}
+joins: []
+synonyms:
+  country: [entity, nation]
+  metric: [primary, value, recorded value]
+metrics:
+  total_primary: SUM(PRIMARY)
+  avg_primary: AVG(PRIMARY)
+examples:
+  - q: Which country had the highest primary value in 2000?
+    sql: SELECT ENTITY, PRIMARY FROM DATAMIND_DB.PUBLIC.DATAMIND WHERE YEAR = 2000 ORDER BY PRIMARY DESC LIMIT 1
+  - q: What was the percentage change in India's recorded value between 2019 and 2025?
+    sql: >-
+      SELECT ((MAX(CASE WHEN YEAR = 2025 THEN PRIMARY END) - MAX(CASE WHEN YEAR = 2019 THEN PRIMARY END))
+      / NULLIF(MAX(CASE WHEN YEAR = 2019 THEN PRIMARY END), 0)) * 100 AS PCT_CHANGE
+      FROM DATAMIND_DB.PUBLIC.DATAMIND
+      WHERE (CODE = 'IND' OR ENTITY ILIKE '%India%')
+  - q: Show the recorded value for India over the last 5 years
+    sql: SELECT YEAR, PRIMARY FROM DATAMIND_DB.PUBLIC.DATAMIND WHERE (CODE = 'IND' OR ENTITY ILIKE '%India%') ORDER BY YEAR DESC LIMIT 5
+limits:
+  max_rows: 1000
+guardrails:
+  max_rows: 1000
+  allowed_tables: [DATAMIND]
+  blocked_columns: []
