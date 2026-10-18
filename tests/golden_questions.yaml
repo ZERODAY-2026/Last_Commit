@@ -1,0 +1,18 @@
+- question: "How many orders were placed in 1995?"
+  expected_shape: single_numeric_value
+  ground_truth_sql: |
+    SELECT COUNT(*) AS ORDER_COUNT
+    FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.ORDERS
+    WHERE YEAR(O_ORDERDATE) = 1995
+- question: "Which five nations had the highest revenue?"
+  expected_shape: ranked_rows
+  ground_truth_sql: |
+    SELECT N.N_NAME,
+           SUM(L.L_EXTENDEDPRICE * (1 - L.L_DISCOUNT)) AS REVENUE
+    FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.LINEITEM L
+    JOIN SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.ORDERS O ON O.O_ORDERKEY = L.L_ORDERKEY
+    JOIN SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.CUSTOMER C ON C.C_CUSTKEY = O.O_CUSTKEY
+    JOIN SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.NATION N ON N.N_NATIONKEY = C.C_NATIONKEY
+    GROUP BY N.N_NAME
+    ORDER BY REVENUE DESC
+    LIMIT 5

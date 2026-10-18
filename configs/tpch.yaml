@@ -1,0 +1,59 @@
+dataset: tpch
+display_name: TPC-H Sales
+description: Snowflake TPC-H sample data at scale factor 1.
+snowflake:
+  database: SNOWFLAKE_SAMPLE_DATA
+  schema: TPCH_SF1
+tables:
+  CUSTOMER:
+    description: One row per customer.
+    columns:
+      C_CUSTKEY: {type: NUMBER, description: Customer identifier}
+      C_NAME: {type: TEXT, description: Customer name}
+      C_NATIONKEY: {type: NUMBER, description: Nation identifier}
+  ORDERS:
+    description: One row per customer order.
+    columns:
+      O_ORDERKEY: {type: NUMBER, description: Order identifier}
+      O_CUSTKEY: {type: NUMBER, description: Customer identifier}
+      O_ORDERDATE: {type: DATE, description: Order date}
+      O_TOTALPRICE: {type: NUMBER, description: Order total price}
+      O_ORDERSTATUS: {type: TEXT, description: Order status}
+  LINEITEM:
+    description: One row per line item in an order.
+    columns:
+      L_ORDERKEY: {type: NUMBER, description: Order identifier}
+      L_EXTENDEDPRICE: {type: NUMBER, description: Extended line price}
+      L_DISCOUNT: {type: NUMBER, description: Discount fraction}
+      L_QUANTITY: {type: NUMBER, description: Quantity ordered}
+      L_SHIPDATE: {type: DATE, description: Ship date}
+  NATION:
+    description: One row per nation.
+    columns:
+      N_NATIONKEY: {type: NUMBER, description: Nation identifier}
+      N_NAME: {type: TEXT, description: Nation name}
+      N_REGIONKEY: {type: NUMBER, description: Region identifier}
+  REGION:
+    description: One row per region.
+    columns:
+      R_REGIONKEY: {type: NUMBER, description: Region identifier}
+      R_NAME: {type: TEXT, description: Region name}
+joins:
+  - ORDERS.O_CUSTKEY = CUSTOMER.C_CUSTKEY
+  - ORDERS.O_ORDERKEY = LINEITEM.L_ORDERKEY
+  - CUSTOMER.C_NATIONKEY = NATION.N_NATIONKEY
+  - NATION.N_REGIONKEY = REGION.R_REGIONKEY
+synonyms:
+  customers: [clients, buyers]
+  orders: [purchases]
+metrics:
+  revenue: SUM(L_EXTENDEDPRICE * (1 - L_DISCOUNT))
+examples:
+  - q: Top 5 nations by revenue in 1995
+    sql: SELECT N.N_NAME, SUM(L.L_EXTENDEDPRICE * (1 - L.L_DISCOUNT)) AS REVENUE FROM LINEITEM L JOIN ORDERS O ON O.O_ORDERKEY = L.L_ORDERKEY JOIN CUSTOMER C ON C.C_CUSTKEY = O.O_CUSTKEY JOIN NATION N ON N.N_NATIONKEY = C.C_NATIONKEY GROUP BY N.N_NAME ORDER BY REVENUE DESC LIMIT 5
+limits:
+  max_rows: 1000
+guardrails:
+  max_rows: 1000
+  allowed_tables: [ORDERS, LINEITEM, CUSTOMER, NATION, REGION]
+  blocked_columns: []
