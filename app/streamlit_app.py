@@ -54,7 +54,6 @@ def _render_evidence(evidence) -> None:
 
 load_dotenv()
 st.set_page_config(page_title="DataMind", page_icon="D", layout="wide")
-st.markdown(Path("app/static/style.css").read_text(), unsafe_allow_html=True)
 
 configs = sorted(p for p in Path("configs").glob("*.yaml") if not p.name.endswith(".example.yaml"))
 if not configs:
