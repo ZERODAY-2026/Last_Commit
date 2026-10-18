@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datamind"
+version = "0.1.0"
+description = "A grounded Snowflake text-to-SQL agent powered by local Gemma."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".venv", ".git", ".pytest_cache", ".ruff_cache"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

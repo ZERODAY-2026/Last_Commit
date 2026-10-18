@@ -1,0 +1,15 @@
+dataset: second_dataset
+description: Replace this example with a licensed dataset loaded into Snowflake.
+snowflake:
+  database: DATAMIND
+  schema: SECOND_DATASET
+tables:
+  EXAMPLE:
+    description: Replace with the loaded table description.
+    columns:
+      ID: {type: NUMBER, description: Row identifier}
+      VALUE: {type: NUMBER, description: Example metric}
+joins: []
+synonyms: {}
+limits:
+  max_rows: 1000
