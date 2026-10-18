@@ -44,10 +44,10 @@ def _render_evidence(evidence) -> None:
 
     with rows_tab:
         if evidence.rows:
-            st.dataframe(evidence.rows, use_container_width=True, hide_index=True)
             chart = result_chart(evidence.rows)
             if chart:
                 st.plotly_chart(chart, use_container_width=True)
+            st.dataframe(evidence.rows, use_container_width=True, hide_index=True)
 
     with trace_tab:
         wh = os.getenv("SNOWFLAKE_WAREHOUSE", "DATAMIND_WH")

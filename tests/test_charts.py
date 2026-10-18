@@ -21,3 +21,25 @@ def test_chart_generates_line_for_year_and_numeric():
     ]
     fig = result_chart(rows)
     assert fig is not None
+
+
+def test_chart_handles_snowflake_decimal_types():
+    from decimal import Decimal
+
+    rows = [
+        {"ENTITY": "India", "PRIMARY": Decimal("79140000.0000000")},
+        {"ENTITY": "China", "PRIMARY": Decimal("48840000.0000000")},
+    ]
+    fig = result_chart(rows)
+    assert fig is not None
+
+
+def test_chart_handles_entity_year_metric():
+    from decimal import Decimal
+
+    rows = [
+        {"ENTITY": "India", "YEAR": 2010, "PRIMARY": Decimal("5000")},
+        {"ENTITY": "India", "YEAR": 2011, "PRIMARY": Decimal("5500")},
+    ]
+    fig = result_chart(rows)
+    assert fig is not None
