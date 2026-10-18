@@ -1,5 +1,13 @@
 # PS-1 DataMind: Talk to Your Data
 
+## Problem Statement
+Organizations hold large amounts of information in databases, spreadsheets, documents and other sources. Getting a useful answer often takes technical skills, specialised queries or hours of manual searching, so the people who understand the questions best are often the least able to reach the data.
+
+The challenge: Create an AI-powered data experience that lets people ask questions in everyday language and get useful answers grounded in the available data, with enough explanation that users trust the response reflects the information actually examined.
+
+Our approach: DataMind uses Gemma 3 4B through local Ollama inference to generate SQL, validates the generated SQL with SQLGlot, and executes approved queries against Snowflake. Answers are constructed from the actual returned rows, with the SQL and Snowflake query ID available for verification.
+
+# DataMind: Talk to Your Data
 
 DataMind is a text-to-SQL agent for Snowflake. A local Gemma model classifies
 questions, writes read-only Snowflake SQL, and explains returned rows. The
