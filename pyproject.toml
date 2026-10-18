@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "A grounded Snowflake text-to-SQL agent powered by local Gemma."
 requires-python = ">=3.11"
 
+[tool.setuptools.packages.find]
+include = ["datamind*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

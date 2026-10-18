@@ -16,18 +16,24 @@ class DataMind:
         self.audit = audit
 
     def answer(self, question: str, history: list[dict[str, str]] | None = None) -> Evidence:
-        context = ""
         if history:
-            context = "\nRecent conversation:\n" + "\n".join(
-                f"{item['role']}: {item['content']}" for item in history[-4:]
+            history_text = "\n".join(f"{item['role']}: {item['content']}" for item in history[-4:])
+            routing_question = f"{question}\n\nRecent conversation:\n{history_text}"
+            sql_question = (
+                f"Previous conversation:\n{history_text}\n\n"
+                f"Focus strictly on answering the CURRENT QUESTION below. If the current question is a new question, ignore the previous conversation.\n"
+                f"Current Question: {question}"
             )
-        question_for_model = question + context
-        route = self.gemma.route(question_for_model, self.config.prompt_schema())
-        if route.status != "answerable":
+        else:
+            routing_question = question
+            sql_question = question
+
+        route = self.gemma.route(routing_question, self.config.prompt_schema())
+        if route.status not in ("answerable", "follow_up"):
             message = route.clarification or route.reason or "This question is outside the configured dataset."
             return Evidence(question, message, route.reason, None, route.assumptions, [], [], None, 0, route.status)
 
-        proposal = self.gemma.write_sql(question_for_model, self.config.prompt_schema())
+        proposal = self.gemma.write_sql(sql_question, self.config.prompt_schema())
         last_error = None
         retries = 0
         for attempt in range(3):
@@ -48,7 +54,7 @@ class DataMind:
                         self.audit.log(question, proposal.sql, None, "error", 0, retries)
                     return evidence
                 retries += 1
-                proposal = self.gemma.write_sql(question_for_model, self.config.prompt_schema(), repair=last_error)
+                proposal = self.gemma.write_sql(sql_question, self.config.prompt_schema(), repair=last_error)
         if not result.rows:
             return Evidence(question, "No rows matched the question.", "The query ran successfully but returned no rows.", validated.sql, proposal.assumptions, result.columns, [], result.query_id, result.elapsed_ms, warning="empty_result")
         answer, explanation = self.gemma.explain(question, validated.sql, result.rows, proposal.assumptions)
