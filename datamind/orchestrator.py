@@ -59,7 +59,7 @@ class DataMind:
             return Evidence(question, "No rows matched the question.", "The query ran successfully but returned no rows.", validated.sql, proposal.assumptions, result.columns, [], result.query_id, result.elapsed_ms, warning="empty_result")
         answer, explanation = self.gemma.explain(question, validated.sql, result.rows, proposal.assumptions)
         warning = None
-        if not answer_numbers_are_grounded(answer, result.rows):
+        if not answer_numbers_are_grounded(answer, result.rows, question):
             warning = "The explanation contained a number not present in the result rows; review the evidence before relying on it."
         if result.truncated:
             warning = (warning + " " if warning else "") + "Results were truncated at the configured row limit."

@@ -126,9 +126,26 @@ class OllamaGemma:
         rows: list[dict[str, Any]],
         assumptions: list[str],
     ) -> tuple[str, str]:
-        data = self._json_prompt(
-            "Explain a database answer using only the supplied rows. Return JSON with "
-            "answer and explanation. Do not add facts, numbers, or claims absent from "
-            f"the rows. Question: {question}\nSQL: {sql}\nAssumptions: {assumptions}\nRows: {rows}"
+        prompt = (
+            "You are an expert data analyst. Formulate a clear, direct, and complete sentence answer to the user's question using ONLY the provided query result rows.\n"
+            "Requirements:\n"
+            "1. Answer in the EXACT SAME LANGUAGE as the user's question (e.g., if asked in Hindi or Hinglish, answer in that language; if in English, answer in English; etc.).\n"
+            "2. Formulate 'answer' as a well-formed, natural, complete sentence (e.g., 'In 1995, a total of 228,637 orders were placed.' instead of just a bare number or raw list).\n"
+            "3. In 'explanation', describe clearly in complete sentences how the answer was computed from the query results, also in the same language.\n"
+            "4. NEVER invent or hallucinate any numbers or facts absent from the rows.\n"
+            "Return JSON with keys 'answer' and 'explanation'.\n\n"
+            f"User Question: {question}\n"
+            f"SQL Executed: {sql}\n"
+            f"Assumptions: {assumptions}\n"
+            f"Result Rows: {rows}"
         )
-        return str(data.get("answer", "")), str(data.get("explanation", ""))
+        data = self._json_prompt(prompt)
+        answer = data.get("answer", "")
+        if isinstance(answer, list):
+            answer = ", ".join(str(x) for x in answer)
+        elif isinstance(answer, dict):
+            answer = str(answer)
+        explanation = data.get("explanation", "")
+        if isinstance(explanation, (list, dict)):
+            explanation = str(explanation)
+        return str(answer), str(explanation)
