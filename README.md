@@ -1,4 +1,5 @@
-# DataMind: Talk to Your Data
+# PS-1 DataMind: Talk to Your Data
+
 
 DataMind is a text-to-SQL agent for Snowflake. A local Gemma model classifies
 questions, writes read-only Snowflake SQL, and explains returned rows. The
