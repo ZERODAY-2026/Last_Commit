@@ -29,8 +29,21 @@ class Evidence(BaseModel):
     warnings: List[str] = Field(default_factory=list)
 
 
+class Claim(BaseModel):
+    text: str
+    row_ids: List[str] = Field(default_factory=list)
+    columns: List[str] = Field(default_factory=list)
+
+
+class Explanation(BaseModel):
+    summary: str
+    claims: List[Claim] = Field(default_factory=list)
+    how_obtained: str = ""
+
+
 class Answer(BaseModel):
     summary: str
     how_obtained: str = ""
     evidence: Evidence
     numbers_verified: bool = False
+    claims: List[Claim] = Field(default_factory=list)
