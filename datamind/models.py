@@ -40,6 +40,7 @@ class Evidence:
     elapsed_ms: int
     status: str = "success"
     warning: str | None = None
+    suggested_questions: list[str] = field(default_factory=list)
 
     def to_contract(self):
         from .schemas import Evidence as EvidenceContract

@@ -69,3 +69,49 @@ class DatasetConfig:
     @property
     def qualified_tables(self) -> set[str]:
         return {f"{self.database}.{self.schema}.{table}".upper() for table in self.tables}
+
+    @classmethod
+    def discover_from_snowflake(
+        cls,
+        connection: Any,
+        database: str,
+        schema: str,
+        display_name: str | None = None,
+    ) -> "DatasetConfig":
+        """Dynamically discover tables and columns from Snowflake INFORMATION_SCHEMA."""
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                f"""SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE
+                FROM {database}.INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = '{schema.upper()}'
+                ORDER BY TABLE_NAME, ORDINAL_POSITION"""
+            )
+            tables: dict[str, Any] = {}
+            for table_name, col_name, data_type in cursor.fetchall():
+                tbl = str(table_name).upper()
+                if tbl not in tables:
+                    tables[tbl] = {
+                        "description": f"Table {tbl} auto-discovered from {database}.{schema}",
+                        "columns": {},
+                    }
+                tables[tbl]["columns"][str(col_name).upper()] = {
+                    "type": str(data_type).upper(),
+                    "description": f"Column {col_name}",
+                }
+            return cls(
+                name=f"{database}_{schema}".lower(),
+                display_name=display_name or f"{database}.{schema} (Auto-Discovered)",
+                description=f"Auto-discovered schema from {database}.{schema} containing {len(tables)} tables.",
+                database=database.upper(),
+                schema=schema.upper(),
+                tables=tables,
+                joins=[],
+                synonyms={},
+                metrics={},
+                examples=[],
+                blocked_columns=set(),
+                max_rows=1000,
+            )
+        finally:
+            cursor.close()
