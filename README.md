@@ -9,67 +9,38 @@ Organizations hold large amounts of information in databases, spreadsheets, docu
 
 ---
 
-## Implemented Features Checklist
+## What it does
 
-All core and advanced capabilities have been implemented, tested, and integrated:
+Most people who have business questions can't write SQL. DataMind bridges that gap.
 
-- [x] **Query Validation and Read-Only Safeguards (#1)**
-  - AST-based SQL validation using `sqlglot` (`datamind/validator.py`).
-  - Strict read-only enforcement: rejects DDL/DML (`DROP`, `ALTER`, `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `COPY`).
-  - Multi-statement blocking and automatic `LIMIT` clause enforcement.
-  - Role-based Snowflake warehouse isolation.
+You type something like *"Which 5 nations had the highest revenue last year?"* and the app:
 
-- [x] **Answer-to-Query Traceability (#2)**
-  - Sentence-level claim attribution mapping every claim in the explanation to specific row numbers and column names (`datamind/schemas.py`).
-  - Evidence receipt containing exact query runtime, Snowflake query ID, and execution metadata.
+1. Figures out what you're asking
+2. Writes a SQL query for it
+3. Runs that query on Snowflake
+4. Explains the answer using only the actual rows returned
 
-- [x] **Follow-Up Questions with Conversational Context (#3)**
-  - Multi-turn state tracking retaining previous questions, executed SQL, and result rows (`datamind/conversation.py`).
-  - Intelligent entity and filter resolution (e.g., resolving relative pronouns like "these same 5 countries" or "those same nations").
-  - SQL unified diff generation between consecutive turns.
+The model never makes up numbers. Every answer comes with the query that produced it, the rows it was built from, and the Snowflake query ID so you can verify it yourself.
 
-- [x] **Visualizations Built from Verified Results (#4)**
-  - Automatic chart generation via Altair (`datamind/charts.py`).
-  - Smart visualization selection: line charts for time-series/years, bar charts for categorical distributions, and grouped charts for multi-dimensional data.
-  - Interactive chart and raw data inspection inside the "Rows & Chart" evidence tab.
+---
 
-- [x] **Interactive Question Suggestions for Out-of-Scope Queries**
-  - Automatic suggestion engine triggered when questions cannot be answered, are out-of-scope, or return zero rows (`datamind/gemma_client.py`).
-  - Clickable one-click UI buttons allowing users to immediately execute suggested alternative questions.
+## How it works
 
-- [x] **Dynamic Schema Discovery (#5)**
-  - Automated inspection of Snowflake `INFORMATION_SCHEMA.COLUMNS` (`datamind/discovery.py`).
-  - Generates dataset configuration YAML files dynamically without manual schema authoring.
-  - Accessible via both Streamlit UI sidebar and CLI script (`scripts/discover_schema.py`).
+```
+Your question
+     ↓
+Gemma (local) — understands the question, writes SQL
+     ↓
+sqlglot — checks the SQL is safe (read-only, allowed tables only)
+     ↓
+Snowflake — runs the query, returns real rows
+     ↓
+Gemma (local) — explains the rows in plain English
+     ↓
+You get: answer + SQL + rows + chart + query ID
+```
 
-- [x] **Automated Data-Quality Checks (#6)**
-  - Computes completeness percentages, null count, and distinct value cardinality on returned query rows (`datamind/quality.py`).
-  - Displays automated data hygiene summaries in the "Data Quality" tab.
-
-- [x] **Cost and Reliability Monitoring (#7)**
-  - Snowflake warehouse credit consumption estimation based on execution runtime and warehouse sizing (`datamind/quality.py`).
-  - Query elapsed time tracking and audit logging (`datamind/audit.py`).
-
-- [x] **Role-Based Access Control (RBAC) (#8)**
-  - Session role indicators and security posture display in UI sidebar.
-  - Dedicated role setup script (`scripts/setup_roles.sql`) supporting `DATAMIND_ANALYST` and `DATAMIND_VIEWER` roles.
-
-- [x] **Multi-Step Analysis & Common Table Expressions (#9)**
-  - Analytical step planner capable of decomposing complex questions into Common Table Expressions (CTEs) (`datamind/planner.py`).
-  - Supports multi-level aggregations, ranking comparisons, and percentage-of-total calculations.
-
-- [x] **Reusable Connectors and Multiple Formats (#10, #11)**
-  - Abstract data connector interface (`datamind/connectors/base.py`).
-  - In-browser file uploader (`datamind/uploader.py`) supporting CSV, XLSX, and XLS formats directly into Snowflake tables.
-  - Auto-registration of uploaded tables into active dataset configurations.
-
-- [x] **Structured Plus Unstructured Data (#12)**
-  - Case-insensitive substring matching (`ILIKE '%term%'`) across descriptive entity columns.
-  - Tolerates fuzzy entity naming, country names, and variations without strict equality constraints.
-
-- [x] **Multilingual Natural Explainer**
-  - Generates natural, complete sentences answering the question in the user's exact input language (English, Hindi, Hinglish, etc.).
-  - Distinguishes language tags (e.g., "in hindi") from data filter predicates.
+Gemma handles the language. Snowflake handles the data. They never mix.
 
 ---
 
